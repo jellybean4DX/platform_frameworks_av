@@ -40,7 +40,7 @@ int Overlay::getBppFromFormat(const Format format)
     case FORMAT_YUV420P:
         return 12;
     default:
-        LOGW("%s: unhandled color format %d", __FUNCTION__, format);
+        ALOGW("%s: unhandled color format %d", __FUNCTION__, format);
     }
     return 32;
 }
@@ -61,7 +61,7 @@ Overlay::Format Overlay::getFormatFromString(const char* name)
         return FORMAT_RGBA8888;
     }
 
-    LOGW("%s: unhandled color format %s", __FUNCTION__, name);
+    ALOGW("%s: unhandled color format %s", __FUNCTION__, name);
     return FORMAT_UNKNOWN;
 }
 
@@ -74,7 +74,7 @@ Overlay::Overlay(uint32_t width, uint32_t height, Format format, QueueBufferHook
     mHeight(height),
     mFormat(format)
 {
-    LOGD("%s: Init overlay, format=%d", __FUNCTION__, format);
+    ALOGD("%s: Init overlay, format=%d", __FUNCTION__, format);
 
     unsigned int mapped = 0;
     int bpp = getBppFromFormat(format);
@@ -88,20 +88,20 @@ Overlay::Overlay(uint32_t width, uint32_t height, Format format, QueueBufferHook
 
     int fd = ashmem_create_region("Overlay_buffer_region", NUM_BUFFERS * bufferSize);
     if (fd < 0) {
-        LOGE("%s: Cannot create ashmem region", __FUNCTION__);
+        ALOGE("%s: Cannot create ashmem region", __FUNCTION__);
         return;
     }
 
-    LOGV("%s: allocated ashmem region for %d buffers of size %d", __FUNCTION__, NUM_BUFFERS, bufferSize);
+    ALOGV("%s: allocated ashmem region for %d buffers of size %d", __FUNCTION__, NUM_BUFFERS, bufferSize);
 
     for (uint32_t i = 0; i < NUM_BUFFERS; i++) {
         mBuffers[i].fd = fd;
         mBuffers[i].length = bufferSize;
         mBuffers[i].offset = bufferSize * i;
-        LOGV("%s: mBuffers[%d].offset = 0x%x", __FUNCTION__, i, mBuffers[i].offset);
+        ALOGV("%s: mBuffers[%d].offset = 0x%x", __FUNCTION__, i, mBuffers[i].offset);
         mBuffers[i].ptr = mmap(NULL, bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, bufferSize * i);
         if (mBuffers[i].ptr == MAP_FAILED) {
-            LOGE("%s: Failed to mmap buffer %d", __FUNCTION__, i);
+            ALOGE("%s: Failed to mmap buffer %d", __FUNCTION__, i);
             mBuffers[i].ptr = NULL;
             continue;
         }
@@ -111,7 +111,7 @@ Overlay::Overlay(uint32_t width, uint32_t height, Format format, QueueBufferHook
 
     pthread_mutex_init(&mQueueMutex, NULL);
 
-    LOGD("%s: Init overlay complete, %u mapped", __FUNCTION__, mapped);
+    ALOGD("%s: Init overlay complete, %u mapped", __FUNCTION__, mapped);
 
     mStatus = NO_ERROR;
 }
@@ -121,13 +121,13 @@ Overlay::~Overlay() {
 
 status_t Overlay::dequeueBuffer(overlay_buffer_t* buffer)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
     int rv = NO_ERROR;
 
     pthread_mutex_lock(&mQueueMutex);
 
     if (mNumFreeBuffers < NUM_MIN_FREE_BUFFERS) {
-        LOGV("%s: No enough free buffers (%d)", __FUNCTION__, mNumFreeBuffers);
+        ALOGV("%s: No enough free buffers (%d)", __FUNCTION__, mNumFreeBuffers);
         rv = NO_MEMORY;
     } else {
         int index = -1;
@@ -144,9 +144,9 @@ status_t Overlay::dequeueBuffer(overlay_buffer_t* buffer)
             int *intBuffer = (int *) buffer;
             *intBuffer = index;
             mNumFreeBuffers--;
-            LOGV("%s: dequeued buffer %d", __FUNCTION__, index);
+            ALOGV("%s: dequeued buffer %d", __FUNCTION__, index);
         } else {
-            LOGE("%s: inconsistent queue state", __FUNCTION__);
+            ALOGE("%s: inconsistent queue state", __FUNCTION__);
             rv = NO_MEMORY;
         }
     }
@@ -160,9 +160,9 @@ status_t Overlay::queueBuffer(overlay_buffer_t buffer)
     uint32_t index = (uint32_t) buffer;
     int rv = mStatus;
 
-    LOGV("%s: %d", __FUNCTION__, index);
+    ALOGV("%s: %d", __FUNCTION__, index);
     if (index > NUM_BUFFERS) {
-        LOGE("%s: invalid buffer index %u", __FUNCTION__, index);
+        ALOGE("%s: invalid buffer index %u", __FUNCTION__, index);
         return INVALID_OPERATION;
     }
 
@@ -174,14 +174,14 @@ status_t Overlay::queueBuffer(overlay_buffer_t buffer)
 
     if (mNumFreeBuffers < NUM_BUFFERS) {
         if (mQueued[index]) {
-            LOGW("%s: The buffer was already in queue", __FUNCTION__);
+            ALOGW("%s: The buffer was already in queue", __FUNCTION__);
         } else {
             mNumFreeBuffers++;
             mQueued[index] = true;
         }
         rv = NO_ERROR;
     } else {
-        LOGW("%s: Attempt to queue more buffers than we have", __FUNCTION__);
+        ALOGW("%s: Attempt to queue more buffers than we have", __FUNCTION__);
         rv = INVALID_OPERATION;
     }
 
@@ -191,37 +191,37 @@ status_t Overlay::queueBuffer(overlay_buffer_t buffer)
 
 status_t Overlay::resizeInput(uint32_t width, uint32_t height)
 {
-    LOGV("%s: %d, %d", __FUNCTION__, width, height);
+    ALOGV("%s: %d, %d", __FUNCTION__, width, height);
     return mStatus;
 }
 
 status_t Overlay::setParameter(int param, int value)
 {
-    LOGV("%s: %d, %d", __FUNCTION__, param, value);
+    ALOGV("%s: %d, %d", __FUNCTION__, param, value);
     return mStatus;
 }
 
 status_t Overlay::setCrop(uint32_t x, uint32_t y, uint32_t w, uint32_t h)
 {
-    LOGV("%s: x=%d, y=%d, w=%d, h=%d", __FUNCTION__, x, y, w, h);
+    ALOGV("%s: x=%d, y=%d, w=%d, h=%d", __FUNCTION__, x, y, w, h);
     return mStatus;
 }
 
 status_t Overlay::getCrop(uint32_t* x, uint32_t* y, uint32_t* w, uint32_t* h)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
     return mStatus;
 }
 
 status_t Overlay::setFd(int fd)
 {
-    LOGV("%s: fd=%d", __FUNCTION__, fd);
+    ALOGV("%s: fd=%d", __FUNCTION__, fd);
     return mStatus;
 }
 
 int32_t Overlay::getBufferCount() const
 {
-    LOGV("%s: %d", __FUNCTION__, NUM_BUFFERS);
+    ALOGV("%s: %d", __FUNCTION__, NUM_BUFFERS);
     return NUM_BUFFERS;
 }
 
@@ -229,7 +229,7 @@ void* Overlay::getBufferAddress(overlay_buffer_t buffer)
 {
     uint32_t index = (uint32_t) buffer;
 
-    LOGV("%s: %d", __FUNCTION__, index);
+    ALOGV("%s: %d", __FUNCTION__, index);
     if (index >= NUM_BUFFERS) {
         index = index % NUM_BUFFERS;
     }
@@ -243,17 +243,17 @@ void Overlay::destroy()
 
     pthread_mutex_lock(&mQueueMutex);
 
-    LOGD("%s", __FUNCTION__);
+    ALOGD("%s", __FUNCTION__);
 
     for (uint32_t i = 0; i < NUM_BUFFERS; i++) {
         if (mBuffers[i].ptr != NULL && munmap(mBuffers[i].ptr, mBuffers[i].length) < 0) {
-            LOGW("%s: unmap of buffer %d failed", __FUNCTION__, i);
+            ALOGW("%s: unmap of buffer %d failed", __FUNCTION__, i);
         } else {
             mBuffers[i].ptr = NULL;
         }
         if (mBuffers[i].fd > 0) {
             if (fd > 0 && fd != mBuffers[i].fd) {
-                LOGD("%s: multiple fd detected, closing fd %d...", __FUNCTION__, fd);
+                ALOGD("%s: multiple fd detected, closing fd %d...", __FUNCTION__, fd);
                 close(fd);
             }
             fd = mBuffers[i].fd;
@@ -271,43 +271,43 @@ void Overlay::destroy()
 
 status_t Overlay::getStatus() const
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
     return mStatus;
 }
 
 overlay_handle_t Overlay::getHandleRef() const
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
     return 0;
 }
 
 uint32_t Overlay::getWidth() const
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
     return mWidth;
 }
 
 uint32_t Overlay::getHeight() const
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
     return mHeight;
 }
 
 int32_t Overlay::getFormat() const
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
     return mFormat;
 }
 
 int32_t Overlay::getWidthStride() const
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
     return mWidth;
 }
 
 int32_t Overlay::getHeightStride() const
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
     return mHeight;
 }
 
