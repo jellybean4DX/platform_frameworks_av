@@ -13,7 +13,7 @@ LOCAL_SRC_FILES:= \
 ifeq ($(BOARD_OVERLAY_BASED_CAMERA_HAL),true)	
     LOCAL_CFLAGS += -DUSE_OVERLAY_CPP	
     LOCAL_SRC_FILES += Overlay.cpp	
-+endif
+endif
 
 LOCAL_SHARED_LIBRARIES := \
 	libcutils \
